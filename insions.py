@@ -14,8 +14,6 @@ class ChargedResidues:
 
 
 
-
-
 argv=sys.argv
 #入力、出力ファイル名
 input_file=""
@@ -225,8 +223,8 @@ class ParamOfSystem:
 				center_z=(float(self.locations_z[i][1])+float(self.locations_z[i][2]))/2
 				diff_z=(center_z-float(self.locations_z[i][0]))*2
 				ion_x=float(self.locations_x[i][0])+diff_x
-				ion_y=float(self.locations_x[i][0])+diff_y
-				ion_z=float(self.locations_x[i][0])+diff_z
+				ion_y=float(self.locations_y[i][0])+diff_y
+				ion_z=float(self.locations_z[i][0])+diff_z
 				center=[round(ion_x,3),round(ion_y,3),round(ion_z,3)]
 				cordinate_of_ions.append(center)
 
@@ -242,6 +240,7 @@ class ParamOfSystem:
 				ion_z=float(self.locations_z[i][0])+diff_z
 				center=[round(ion_x,3),round(ion_y,3),round(ion_z,3)]
 				cordinate_of_ions.append(center)
+		return cordinate_of_ions
 
 def addlines(filename):
 	#計算したカウンターイオンの座標をテキストファイルに出力する
@@ -314,9 +313,7 @@ if __name__ == "__main__":
 	param_of_system.inquire_user_on_commandline()
 
 	param_of_system.set_location_of_selected_aminoacid(pdb_data)
-	print(param_of_system.locations_x)
-	print(param_of_system.locations_y)
-	print(param_of_system.locations_z)
+
 
 	add_ions_cordinates = param_of_system.calculate_cordinate_of_counter_ions()
 	print(add_ions_cordinates)
