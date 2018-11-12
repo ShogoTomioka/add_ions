@@ -15,20 +15,6 @@ class ChargedResidues:
 
 
 
-def inquire_user_on_commandline():
-	print(tt)
-
-
-def calculate_cordinate_of_counter_ions(i):
-	#カウンターイオンを付加する荷電アミノ酸の座標から、各カウンターイオンの座標を計算する
-	print(tt)
-
-
-def addlines(filename):
-	#計算したカウンターイオンの座標をテキストファイルに出力する
-	print(tt)
-
-
 argv=sys.argv
 #入力、d出力ファイル名
 input_file=""
@@ -46,7 +32,7 @@ class ParamOfSystem:
 	charged_aminoacids        :  系内の荷電アミノ酸のリスト（番号）
 	chosen_aminoacids         :  カウンターイオンを付加する荷電アミノ酸（番号）
 	start_position            :  座標を計算する時に使う
-	location_of_charged_acids :  上に同じ
+	locations_** :  上に同じ
 	"""
 
 	length_of_pdb = 0
@@ -57,6 +43,7 @@ class ParamOfSystem:
 	charged_aminoacids = []
 	chosen_aminoacids = []
 	start_position = []
+	locations_x = []
 
 	isMonomer_has_name = False
 
@@ -68,7 +55,7 @@ class ParamOfSystem:
 		と
 		ATOM      6  O   ACE  A  1     -27.336   3.451  24.195  1.00  0.00
 		では”A”がある分リストの長さが違ってくるので識別子がついているかは確認しないといけない
-		識別子があるかどうかはisMonomer_has_nameに入ってる
+		識別子があるかどうかはisMonomer_has_nameにbooleanで格納
 	"""
 		for i in range(self.length_of_pdb):
 			line=data[i].split()
@@ -138,11 +125,36 @@ class ParamOfSystem:
 					self.charged_aminoacids.remove(i)
 				if "ASP" in self.dict_number_and_name[i]:
 					self.charged_aminoacids.remove(i)
+	
 
+	def inquire_user_on_commandline():
+	#ユーザにコマンドラインからカウンターイオンを付け足したい荷電アミノ酸を選択してもらう
+		print("\n")
+		print(self.char)
+		
+		while self.charge!=0:
+			try:
+				fnumber=input("> 番号を入力してください : ") 
+				fnumber=int(fnumber)
+				if fnumber in self.charged_list:
+					self.addion(fnumber)
+					self.addlist.append(fnumber)
+					self.charged_list.remove(fnumber)
+					print("       残りの電荷は {0} です。         ".format(self.charge))
+				elif fnumber==0:
+					print("          電荷が0になったので終了します           ")
+					break
+				else:
+					print("入力された番号が正しくありません")
+				if len(self.charged_list)==0:
+					print("　全体の電荷は0ではありませんが、カウンターイオンを付加することのできる荷電アミノ酸が存在しません")
+					break
+			except (RuntimeError, TypeError, NameError,ValueError):
+				print("lease,type a number")
 
 	def set_location_of_selected_aminoacid(self,data):
 	#カウンターイオンの座標計算のためにユーザが選択した家電アミノ酸の各原子の座標をリストにセットする
-		location=[]
+		"""location=[]
 		x=[]
 		y=[]
 		z=[]
@@ -162,9 +174,16 @@ class ParamOfSystem:
 				z.append(line[8])
 		self.xx.append(x)
 		self.yy.append(y)
-		self.zz.append(z)
+		self.zz.append(z)"""
+
+	def calculate_cordinate_of_counter_ions(i):
+	#カウンターイオンを付加する荷電アミノ酸の座標から、各カウンターイオンの座標を計算する
+		print(tt)
 
 
+	def addlines(filename):
+	#計算したカウンターイオンの座標をテキストファイルに出力する
+		print(tt)
 
 #ユーザが電荷を指定した場合にがこの変数が０以外になる
 Spacificated_number_of_charge = 0
@@ -218,6 +237,17 @@ if __name__ == "__main__":
 	param_of_system.extract_charged_aminoacid()
 	param_of_system.set_location_of_selected_aminoacid(data)
 
+	print("カウンターイオンが付加可能な荷電アミノ酸を表示します")
+	for i in param_of_system.charged_aminoacids:
+		print("＞ {0}".format(param_of_system.dict_number_and_name[i]))
+	if param_of_system.total_charge!=0:
+		print("系全体の電荷の合計は{0}です".format(param_of_system.total_charge))
+		print("\n途中で終了したい場合には「0」を入力してさい")
+	else:
+		print(" 全体の電荷は0です。（もしくはリガンドのみが電荷を持っています ")
+		sys.exit()
+
+	inquire_user_on_commandline()
 
 
 
