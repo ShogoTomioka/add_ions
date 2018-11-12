@@ -11,16 +11,15 @@ class ChargedResidues:
 	Asp_atoms = ["CG","OD1","OD2"]
 	Arg_atoms = ["CZ","2HH1","2HH2"]
 	Arg_atoms2 = ["CZ","HH12","HH22"]
-	Atmo_length = [21,25,25,22,22]
 
 
 
 argv=sys.argv
-#入力、d出力ファイル名
+#入力、出力ファイル名
 input_file=""
 output_file= "ions.txt"
 
-#入力された系の電荷や家電アミノ酸のリスト等を持つクラス
+#入力された系の電荷や荷電アミノ酸のリスト等を持つクラス
 class ParamOfSystem:
 
 	"""
@@ -31,7 +30,8 @@ class ParamOfSystem:
 	dict_number_and_name      :  アミノ酸の番号と名前の辞書
 	charged_aminoacids        :  系内の荷電アミノ酸のリスト（番号）
 	chosen_aminoacids         :  カウンターイオンを付加する荷電アミノ酸（番号）
-	start_position            :  座標を計算する時に使う
+	head_of_each_aminoacid    :  各アミノ酸の先頭に当たるファイル上の位置
+	head_of_selected_acid      :  カウンターイオンをつける各荷電アミノ酸のファイル上の位置
 	locations_** :  上に同じ
 	"""
 
@@ -42,8 +42,11 @@ class ParamOfSystem:
 	dict_number_and_name ={}
 	charged_aminoacids = []
 	chosen_aminoacids = []
-	start_position = []
+	head_of_each_aminoacid = []
+	head_of_selected_acid = []
 	locations_x = []
+	locations_y = []
+	locations_z = []
 
 	isMonomer_has_name = False
 
@@ -76,7 +79,7 @@ class ParamOfSystem:
 				acid_name=line[3]+str(number_to_add)
 				if (acid_name in self.list_of_acid_name)!=True:
 					self.list_of_acid_name.append(acid_name)
-					self.start_position.append(i)
+					self.head_of_each_aminoacid.append(i)
 			except IndexError:
 				pass
 
@@ -125,65 +128,81 @@ class ParamOfSystem:
 					self.charged_aminoacids.remove(i)
 				if "ASP" in self.dict_number_and_name[i]:
 					self.charged_aminoacids.remove(i)
-	
 
-	def inquire_user_on_commandline():
+	def inquire_user_on_commandline(self):
 	#ユーザにコマンドラインからカウンターイオンを付け足したい荷電アミノ酸を選択してもらう
-		print("\n")
-		print(self.char)
-		
-		while self.charge!=0:
-			try:
-				fnumber=input("> 番号を入力してください : ") 
-				fnumber=int(fnumber)
-				if fnumber in self.charged_list:
-					self.addion(fnumber)
-					self.addlist.append(fnumber)
-					self.charged_list.remove(fnumber)
-					print("       残りの電荷は {0} です。         ".format(self.charge))
-				elif fnumber==0:
-					print("          電荷が0になったので終了します           ")
-					break
-				else:
-					print("入力された番号が正しくありません")
-				if len(self.charged_list)==0:
-					print("　全体の電荷は0ではありませんが、カウンターイオンを付加することのできる荷電アミノ酸が存在しません")
-					break
-			except (RuntimeError, TypeError, NameError,ValueError):
-				print("lease,type a number")
+		while self.total_charge!=0:
+			print("\n")
+			print(self.charged_aminoacids)
+			fnumber=input("> 番号を入力してください : ")
+			if fnumber in self.charged_aminoacids:
+				self.chosen_aminoacids.append(fnumber)
+				self.charged_aminoacids.remove(fnumber)
+				print("       残りの電荷は {0} です。         ".format(self.total_charge))
+			elif fnumber=="0":
+				print("          選択を終了します           ")
+				break
+			else:
+				print("入力された番号が正しくありません")
+			if len(self.charged_aminoacids)==0:
+				print("　全体の電荷は0ではありませんが、カウンターイオンを付加することのできる荷電アミノ酸が存在しません")
+				break
 
 	def set_location_of_selected_aminoacid(self,data):
-	#カウンターイオンの座標計算のためにユーザが選択した家電アミノ酸の各原子の座標をリストにセットする
-		"""location=[]
-		x=[]
-		y=[]
-		z=[]
-		number=int(length)
-		width=len(self.address_cal[number])
+	#カウンターイオンの座標計算のためにユーザが選択した荷電アミノ酸の各原子の座標をリストにセットする
+		for i in self.chosen_aminoacids:
+			atoms=[]
+			index = self.list_of_number.index(i)
+			position = self.head_of_each_aminoacid[index]
 
-		for i in range(width):
-			line=data[int(self.address_cal[length][i])]
-			line=line.split()
-			if self.frag==0:
-				x.append(line[5])
-				y.append(line[6])
-				z.append(line[7])
-			elif self.frag==1:
-				x.append(line[6])
-				y.append(line[7])
-				z.append(line[8])
-		self.xx.append(x)
-		self.yy.append(y)
-		self.zz.append(z)"""
+			if "LYS" in self.dict_number_and_name[i]:
+				name_add_atoms = ChargedResidues.Lys_atoms
+			elif "GLU" in self.dict_number_and_name[i]:
+				name_add_atoms = ChargedResidues.Glu_atoms
+			elif "ASP" in self.dict_number_and_name[i]:
+				name_add_atoms = ChargedResidues.Asp_atoms
+			elif "ARG" in self.dict_number_and_name[i]:
+				#Argは水素の名前が二種類あったりするので、ここで判別している
+				for t in range(25):
+					if data[position+t].find("2HH1")!=-1:
+						name_add_atoms = ChargedResidues.Arg_atoms
+					if data[position+t].find("HH12")!=-1:
+						name_add_atoms = ChargedResidues.Arg_atoms2
+			else:pass
 
-	def calculate_cordinate_of_counter_ions(i):
+			for atom_name in name_add_atoms:
+			#計算に必要な原子の座標を探索して、格納していく
+				for t in range(25):
+					if data[position+t].find(atom_name)!=-1:
+						atoms.append(position+t)
+
+
+			x = []
+			y = []
+			z = []
+			for atom in atoms:
+				line = data[int(atom)].split()
+				if self.isMonomer_has_name:
+					x.append(line[6])
+					y.append(line[7])
+					z.append(line[8])
+				else:
+					x.append(line[5])
+					y.append(line[6])
+					z.append(line[7])
+			self.locations_x.append(x)
+			self.locations_y.append(y)
+			self.locations_z.append(z)
+
+
+
+	def calculate_cordinate_of_counter_ions(self):
 	#カウンターイオンを付加する荷電アミノ酸の座標から、各カウンターイオンの座標を計算する
-		print(tt)
+		return "1"
 
-
-	def addlines(filename):
+def addlines(filename):
 	#計算したカウンターイオンの座標をテキストファイルに出力する
-		print(tt)
+	print(tt)
 
 #ユーザが電荷を指定した場合にがこの変数が０以外になる
 Spacificated_number_of_charge = 0
@@ -246,8 +265,16 @@ if __name__ == "__main__":
 	else:
 		print(" 全体の電荷は0です。（もしくはリガンドのみが電荷を持っています ")
 		sys.exit()
+	param_of_system.inquire_user_on_commandline()
+	print("あなたの選択したアミノ酸は\n")
+	for i in param_of_system.chosen_aminoacids:
+		print("・",param_of_system.dict_number_and_name[i],"\n")
 
-	inquire_user_on_commandline()
+	param_of_system.set_location_of_selected_aminoacid(pdb_data)
+
+	#add_ions_cordinates = param_of_system.calculate_cordinate_of_counter_ions()
+
+
 
 
 
