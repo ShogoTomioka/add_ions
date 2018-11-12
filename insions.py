@@ -14,6 +14,8 @@ class ChargedResidues:
 
 
 
+
+
 argv=sys.argv
 #入力、出力ファイル名
 input_file=""
@@ -138,7 +140,11 @@ class ParamOfSystem:
 			if fnumber in self.charged_aminoacids:
 				self.chosen_aminoacids.append(fnumber)
 				self.charged_aminoacids.remove(fnumber)
-				print("       残りの電荷は {0} です。         ".format(self.total_charge))
+				if self.total_charge>0:
+					self.total_charge+=-1
+				else:
+					self.total_charge+=1
+				print("     系の残りの電荷は {0} です。         ".format(self.total_charge))
 			elif fnumber=="0":
 				print("          選択を終了します           ")
 				break
@@ -152,30 +158,33 @@ class ParamOfSystem:
 	#カウンターイオンの座標計算のためにユーザが選択した荷電アミノ酸の各原子の座標をリストにセットする
 		for i in self.chosen_aminoacids:
 			atoms=[]
+			search_area = []#原子名を探索する範囲、大きすぎると隣のアミノ酸までいっちゃうよ
 			index = self.list_of_number.index(i)
 			position = self.head_of_each_aminoacid[index]
 
 			if "LYS" in self.dict_number_and_name[i]:
 				name_add_atoms = ChargedResidues.Lys_atoms
+				search_area = 22
 			elif "GLU" in self.dict_number_and_name[i]:
 				name_add_atoms = ChargedResidues.Glu_atoms
+				search_area = 14
 			elif "ASP" in self.dict_number_and_name[i]:
 				name_add_atoms = ChargedResidues.Asp_atoms
+				search_area = 14
 			elif "ARG" in self.dict_number_and_name[i]:
 				#Argは水素の名前が二種類あったりするので、ここで判別している
-				for t in range(25):
+				for t in range(24):
 					if data[position+t].find("2HH1")!=-1:
 						name_add_atoms = ChargedResidues.Arg_atoms
 					if data[position+t].find("HH12")!=-1:
 						name_add_atoms = ChargedResidues.Arg_atoms2
+				search_area = 24
 			else:pass
-
 			for atom_name in name_add_atoms:
 			#計算に必要な原子の座標を探索して、格納していく
-				for t in range(25):
+				for t in range(search_area):
 					if data[position+t].find(atom_name)!=-1:
 						atoms.append(position+t)
-
 
 			x = []
 			y = []
@@ -198,14 +207,48 @@ class ParamOfSystem:
 
 	def calculate_cordinate_of_counter_ions(self):
 	#カウンターイオンを付加する荷電アミノ酸の座標から、各カウンターイオンの座標を計算する
-		return "1"
+		cordinate_of_ions = []
+		for index in self.chosen_aminoacids:
+			i = 0
+			#Lysだけ計算に原子が四つ必要になるので、Lysかどうかを判定
+			if "LYS" in self.dict_number_and_name[index]:
+				count=4
+			else:
+				count=3
+
+			if count==3:
+				# ここでの`center`は端にある水素、もしくは酸素原子の中間点のこと
+				center_x=(float(self.locations_x[i][1])+float(self.locations_x[i][2]))/2
+				diff_x=(center_x-float(self.locations_x[i][0]))*2
+				center_y=(float(self.locations_y[i][1])+float(self.locations_y[i][2]))/2
+				diff_y=(center_y-float(self.locations_y[i][0]))*2
+				center_z=(float(self.locations_z[i][1])+float(self.locations_z[i][2]))/2
+				diff_z=(center_z-float(self.locations_z[i][0]))*2
+				ion_x=float(self.locations_x[i][0])+diff_x
+				ion_y=float(self.locations_x[i][0])+diff_y
+				ion_z=float(self.locations_x[i][0])+diff_z
+				center=[round(ion_x,3),round(ion_y,3),round(ion_z,3)]
+				cordinate_of_ions.append(center)
+
+			if count==4:
+				center_x=(float(self.locations_x[i][1])+float(self.locations_x[i][2])+float(self.locations_x[i][3]))/3
+				diff_x=(center_x-float(self.locations_x[i][0]))*2
+				center_y=(float(self.locations_y[i][1])+float(self.locations_y[i][2])+float(self.locations_y[i][3]))/3
+				diff_y=(center_y-float(self.locations_y[i][0]))*2
+				center_z=(float(self.locations_z[i][1])+float(self.locations_z[i][2])+float(self.locations_z[i][3]))/3
+				diff_z=(center_z-float(self.locations_z[i][0]))*2
+				ion_x=float(self.locations_x[i][0])+diff_x
+				ion_y=float(self.locations_y[i][0])+diff_y
+				ion_z=float(self.locations_z[i][0])+diff_z
+				center=[round(ion_x,3),round(ion_y,3),round(ion_z,3)]
+				cordinate_of_ions.append(center)
 
 def addlines(filename):
 	#計算したカウンターイオンの座標をテキストファイルに出力する
 	print(tt)
 
 #ユーザが電荷を指定した場合にがこの変数が０以外になる
-Spacificated_number_of_charge = 0
+Specificated_number_of_charge = 0
 
 if __name__ == "__main__":
 	"""
@@ -228,7 +271,7 @@ if __name__ == "__main__":
 		elif argv[i] == "-i":
 			input_file = argv[i+1]
 		elif argv[i] == "-n":
-			header_file = argv[i+1]
+			Specificated_number_of_charge = argv[i+1]
 		if argv[i] == "-h":
 			print(  "\n------------------:help--------------------------\n"\
             "This program can add ions near the charged amino acids,\n and you can also specificate the charge of system.\"\n"\
@@ -253,6 +296,9 @@ if __name__ == "__main__":
 	param_of_system.create_number_and_name_list(pdb_data)
 	param_of_system.joint_number_to_acidname()
 	param_of_system.count_charge_and_create_charged_list()
+	
+	if Specificated_number_of_charge !=0:
+		param_of_system.total_charge=int(Specificated_number_of_charge)
 	param_of_system.extract_charged_aminoacid()
 	param_of_system.set_location_of_selected_aminoacid(data)
 
@@ -266,13 +312,14 @@ if __name__ == "__main__":
 		print(" 全体の電荷は0です。（もしくはリガンドのみが電荷を持っています ")
 		sys.exit()
 	param_of_system.inquire_user_on_commandline()
-	print("あなたの選択したアミノ酸は\n")
-	for i in param_of_system.chosen_aminoacids:
-		print("・",param_of_system.dict_number_and_name[i],"\n")
 
 	param_of_system.set_location_of_selected_aminoacid(pdb_data)
+	print(param_of_system.locations_x)
+	print(param_of_system.locations_y)
+	print(param_of_system.locations_z)
 
-	#add_ions_cordinates = param_of_system.calculate_cordinate_of_counter_ions()
+	add_ions_cordinates = param_of_system.calculate_cordinate_of_counter_ions()
+	print(add_ions_cordinates)
 
 
 
