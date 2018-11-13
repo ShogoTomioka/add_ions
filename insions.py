@@ -12,12 +12,23 @@ class ChargedResidues:
 	Arg_atoms = ["CZ","2HH1","2HH2"]
 	Arg_atoms2 = ["CZ","HH12","HH22"]
 
+class Counter_ions:
+	#挿入するイオンの情報を持つクラス、NaとCl以外で挿入したいイオンがあればここを編集
+	def positive_case(self):
+		return "Cl-"
+	def negative_case(self):
+		return "Na+"
+
+	def decide_couter_ion(self, total_charge):
+		#ここでカウンターイオンを決定
+		if int(total_charge) >  0:
+			return self.positive_case()
+		else:
+			return self.negative_case()
 
 
-argv=sys.argv
-#入力、出力ファイル名
-input_file=""
-output_file= "ions.txt"
+
+
 
 #入力された系の電荷や荷電アミノ酸のリスト等を持つクラス
 class ParamOfSystem:
@@ -242,12 +253,69 @@ class ParamOfSystem:
 				cordinate_of_ions.append(center)
 		return cordinate_of_ions
 
-def addlines(filename):
+	def generate_ions(self, filename, add_ions_cordinates, couter_ion, number_of_atoms):
+		def isMinus(number, space):
+			if number > 0:
+				return space+" "
+			else:
+				return space
+
+		def isDouble_digit(number, space):
+			if abs(number) >= 10:
+				return space
+			else:
+				return space+" "
+		
+		def check_acid_number(number):
+			if float(number) >= 100:
+				return "   "
+			else:
+				return "    "
+
 	#計算したカウンターイオンの座標をテキストファイルに出力する
-	print(tt)
+		with open(filename,"a") as file:
+			file.writelines("\n")
+			count = 0
+			for ion in add_ions_cordinates:
+
+				x = round(float(ion[0]),3)
+				y = round(float(ion[1]),3)
+				z = round(float(ion[2]),3)
+				spaces = ["","","     "," "," "]
+				#ここからは出力ファイルの体裁を整えるためにスペースの大きさを調整している
+				if number_of_atoms >= 10000:
+					spaces[0] = "  "
+				elif number_of_atoms >= 1000:
+					spaces[0] = "   "
+				elif number_of_atoms > 100:
+					spaces[0] = "    "
+
+				spaces[1] = check_acid_number(len(self.list_of_acid_name)+count)
+				#x軸の座標がマイナスか、桁数は何桁かによってスペースの大きさを調整
+				spaces[2] = isMinus(x,isDouble_digit(x,spaces[2]))
+				spaces[3] = isMinus(y,isDouble_digit(y,spaces[3]))
+				spaces[4] = isMinus(z,isDouble_digit(z,spaces[4]))
+
+				line=("\nATOM{0}{1}  {2} {2}{3}{4}{5}{6}{7}{8}{9}{10}"
+				.format(spaces[0], number_of_atoms+count, counter_ion, spaces[1], len(self.list_of_acid_name)+count, spaces[2], x, spaces[3], y, spaces[4], z))
+
+				file.writelines(line)
+				count += 1
+		print("　カウンターイオンの座標は　{0}　に書かれています".format(filename))
+
+
 
 #ユーザが電荷を指定した場合にがこの変数が０以外になる
 Specificated_number_of_charge = 0
+
+
+argv=sys.argv
+#入力、出力ファイル名
+input_file=""
+output_file= "ions.txt"
+
+
+
 
 if __name__ == "__main__":
 	"""
@@ -261,6 +329,7 @@ if __name__ == "__main__":
 
 	param_of_system = ParamOfSystem()
 	chargef_residues = ChargedResidues()
+	ions = Counter_ions()
 
 	for i in range(len(argv)):
 		if argv[i] == "-o":
@@ -295,9 +364,13 @@ if __name__ == "__main__":
 	param_of_system.create_number_and_name_list(pdb_data)
 	param_of_system.joint_number_to_acidname()
 	param_of_system.count_charge_and_create_charged_list()
-	
+
 	if Specificated_number_of_charge !=0:
 		param_of_system.total_charge=int(Specificated_number_of_charge)
+
+	#カウンターイオンの種類をここで決定
+	counter_ion = ions.decide_couter_ion(param_of_system.total_charge)
+
 	param_of_system.extract_charged_aminoacid()
 	param_of_system.set_location_of_selected_aminoacid(data)
 
@@ -314,9 +387,10 @@ if __name__ == "__main__":
 
 	param_of_system.set_location_of_selected_aminoacid(pdb_data)
 
-
 	add_ions_cordinates = param_of_system.calculate_cordinate_of_counter_ions()
-	print(add_ions_cordinates)
+
+	param_of_system.generate_ions(output_file, add_ions_cordinates, counter_ion, int(len(pdb_data)))
+
 
 
 
